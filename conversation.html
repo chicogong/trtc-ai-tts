@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRTC AI Conversation</title>
+    <link rel="icon" href="src/agent_cards/assets/star.ico" type="image/x-icon">
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px;
+            font-family: Arial, sans-serif;
+            background: white;
+            color: #333;
+        }
+
+        .main-container {
+            margin-top: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: normal;
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        #room-state,
+        #agent-state {
+            width: 100px;
+            height: 30px;
+            border: 2px solid rgba(0, 150, 255, 0.5);
+            border-radius: 5px;
+            text-align: center;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .volume-bar-container {
+            flex: 1;
+            min-width: 100px;
+            height: 22px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .volume-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, rgb(144, 230, 147), rgb(243, 239, 8), rgb(232, 184, 98));
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .subtitle-display {
+            height: 6em;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #63b4c1;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+            resize: none;
+        }
+
+        .control-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .agent-select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #63b4c1;
+            border-radius: 5px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            width: 200px;
+            margin-bottom: 10px;
+        }
+
+        .agent-select:focus {
+            border-color: #41a7d8;
+            box-shadow: 0 0 5px rgba(65, 167, 216, 0.5);
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 1px solid #BBDEFB;
+            border-radius: 5px;
+            background: #E3F2FD;
+            color: #1565C0;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+            flex: 1;
+            min-width: 10px;
+            height: 43px;
+        }
+
+        .control-btn:hover {
+            background: #BBDEFB;
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn:disabled {
+            background: #F5F5F5;
+            color: #BDBDBD;
+            border-color: #E0E0E0;
+            cursor: not-allowed;
+        }
+
+        .control-btn.danger {
+            background: #FFEBEE;
+            color: #F44336;
+            border: 1px solid #FFCDD2;
+        }
+
+        .control-btn.danger:hover {
+            background: #FFCDD2;
+        }
+
+        .agent-tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #63b4c1;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            line-height: 1.4;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .agent-tooltip.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .agent-tooltip h4 {
+            margin: 0 0 8px 0;
+            color: #1565C0;
+            font-size: 16px;
+        }
+
+        .agent-tooltip p {
+            margin: 0;
+            color: #333;
+        }
+
+        .conversation-display {
+            height: 20em;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #63b4c1;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+            resize: none;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                margin: 10px auto;
+                padding: 0 10px;
+            }
+
+            .main-container {
+                margin-top: 10px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .status-container {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            #room-state, #agent-state {
+                width: 100%;
+                margin-bottom: 10px;
+                height: 40px;
+            }
+
+            .volume-bar-container {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .control-container {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .agent-select {
+                flex: 1 1 100%;
+                width: 100%;
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            .control-btn {
+                flex: 1 1 calc(50% - 5px);
+                width: auto;
+                min-width: auto;
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            .subtitle-display {
+                height: 100px;
+                font-size: 14px;
+            }
+
+            .conversation-display {
+                height: 200px;
+                font-size: 14px;
+            }
+
+            .agent-tooltip {
+                position: fixed;
+                left: 10px;
+                right: 10px;
+                top: auto;
+                bottom: 120px;
+                max-width: none;
+                transform: translateY(10px);
+            }
+
+            .agent-tooltip.visible {
+                transform: translateY(0);
+            }
+        }
+
+        @media (hover: none) {
+            .control-btn:hover {
+                transform: none;
+                background: #E3F2FD;
+            }
+
+            .control-btn:active {
+                background: #90CAF9;
+            }
+
+            .control-btn.danger:active {
+                background: #EF9A9A;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display: none;">
+        <textarea id="subtitle-text-place" readonly></textarea>
+    </div>
+
+    <div class="main-container">
+        <!-- <h1 style="text-align: center;">TRTC AI Conversation</h1> -->
+        <div class="status-container">
+            <div id="room-state">Disconnected</div>
+            <div id="agent-state">Inactive</div>
+            <div class="volume-bar-container">
+                <div id="volume-bar" class="volume-bar"></div>
+            </div>
+        </div>
+
+        <textarea id="subtitle-display" class="subtitle-display" readonly placeholder="real-time subtitle"></textarea>
+
+        <div class="control-container">
+            <select id="agent-select" class="agent-select">
+                <option value="">Select AI Agent...</option>
+            </select>
+            <button id="toggle-btn" class="control-btn">Start Chat</button>
+            <button id="interrupt-btn" class="control-btn">Interrupt</button>
+        </div>
+
+        <div id="agent-tooltip" class="agent-tooltip"></div>
+
+        <textarea id="conversation-display" class="conversation-display" readonly placeholder="conversation history"></textarea>
+    </div>
+
+    <script src='https://web.sdk.qcloud.com/trtc/webrtc/v5/dist/trtc.js'></script>
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: window.location.origin,
+            MESSAGE_TYPES: {
+                CONVERSATION: 10000,
+                STATE_CHANGE: 10001,
+                ERROR_CALLBACK: 10030,
+                METRICS_CALLBACK: 10020
+            }
+        };
+
+        // Application State
+        const AppState = {
+            taskId: null,
+            selectedAgent: '',
+            isActive: false,
+            isProcessing: false,
+            agentData: {}
+        };
+
+        const TRTCState = {
+            client: null,
+            currentUserId: null,
+            botUserId: null,
+            prevVolume: 0
+        };
+
+        async function apiRequest(endpoint, data, method = "POST") {
+            const options = {
+                method: method,
+                headers: { "Content-Type": "application/json" }
+            };
+            
+            if (method !== "GET" && method !== "HEAD") {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, options);
+            if (!response.ok) throw new Error(`API error: ${response.status}`);
+            return await response.json();
+        }
+
+        async function enterTRTCRoom(params) {
+            const client = TRTCState.client = TRTC.create();
+            await client.enterRoom({
+                roomId: parseInt(params.roomId),
+                scene: "rtc",
+                sdkAppId: params.sdkAppId,
+                userId: params.userId,
+                userSig: params.userSig,
+            });
+            
+            client.on(TRTC.EVENT.CUSTOM_MESSAGE, handleTRTCMessage);
+            client.on(TRTC.EVENT.AUDIO_VOLUME, handleAudioVolume);
+            client.enableAudioVolumeEvaluation(50);
+            await client.startLocalAudio();
+            return client;
+        }
+
+        async function exitTRTCRoom() {
+            if (TRTCState.client) {
+                await TRTCState.client.exitRoom();
+                TRTCState.client.destroy();
+                TRTCState.client = null;
+            }
+        }
+
+        function handleTRTCMessage(event) {
+            try {
+                const data = JSON.parse(new TextDecoder().decode(event.data));
+                
+                if (data.type === CONFIG.MESSAGE_TYPES.CONVERSATION) {
+                    const { sender, payload } = data;
+                    const isRobot = sender.includes('ai_');
+                    addMessage(sender, payload.text, isRobot ? 'ai' : 'user', payload.roundid, payload.end);
+                    updateSubtitles();
+                } 
+                else if (data.type === CONFIG.MESSAGE_TYPES.STATE_CHANGE) {
+                    const stateMap = { 1: 'Listening', 2: 'Thinking', 3: 'Speaking', 4: 'Interrupted' };
+                    updateStatus('ai', stateMap[data.payload.state] || 'Unknown');
+                }
+                else if (data.type === CONFIG.MESSAGE_TYPES.ERROR_CALLBACK) {
+                    console.error('AI Service Error:', data.payload);
+                }
+            } catch (error) {
+                console.error('TRTC message error:', error);
+            }
+        }
+
+        function handleAudioVolume(event) {
+            event.result.forEach(({ userId, volume }) => {
+                if (userId === '' || userId === TRTCState.botUserId) {
+                    const smoothedVolume = (volume * 0.7) + (TRTCState.prevVolume * 0.3);
+                    TRTCState.prevVolume = smoothedVolume;
+                    updateVolumeBar(smoothedVolume);
+                }
+            });
+        }
+
+        function addMessage(sender, text, type, roundid, end) {
+            const subtitleElement = document.getElementById('subtitle-text-place');
+            const conversationElement = document.getElementById('conversation-display');
+            
+            // Update subtitle with speaker indication
+            if (subtitleElement) {
+                const speaker = type === 'ai' ? '🤖 AI' : '👤 User';
+                subtitleElement.value = `${speaker}: ${text}`;
+            }
+            
+            // Add to conversation history only when complete
+            if (conversationElement && end) {
+                const timestamp = new Date().toLocaleTimeString();
+                const speaker = type === 'ai' ? '🤖 AI Assistant' : '👤 User';
+                const message = `[${timestamp}] ${speaker}: ${text}`;
+                
+                if (conversationElement.value) {
+                    conversationElement.value += `\n${message}`;
+                } else {
+                    conversationElement.value = message;
+                }
+                conversationElement.scrollTop = conversationElement.scrollHeight;
+            }
+        }
+
+        function updateStatus(target, status) {
+            const elementId = target === 'ai' ? 'agent-state' : 'room-state';
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = status;
+                element.classList.toggle('active', 
+                    status.includes('Connected') || status.includes('Listening') || 
+                    status.includes('Thinking') || status.includes('Speaking'));
+            }
+        }
+
+        function updateSubtitles() {
+            const sourceElement = document.getElementById('subtitle-text-place');
+            const displayElement = document.getElementById('subtitle-display');
+            const text = sourceElement?.value || '';
+            
+            if (displayElement) {
+                displayElement.value = text;
+            }
+        }
+
+        function updateVolumeBar(volume) {
+            const volumeBar = document.getElementById('volume-bar');
+            if (volumeBar) {
+                const scaledVolume = volume < 5 ? 8 : Math.min(volume * 2.5, 100);
+                volumeBar.style.width = `${scaledVolume}%`;
+                volumeBar.classList.toggle('active', volume > 5);
+            }
+        }
+
+        async function loadAgents() {
+            // Hardcoded default agent
+            const agentSelect = document.getElementById('agent-select');
+            agentSelect.innerHTML = '';
+            
+            AppState.agentData = {
+                default: {
+                    id: 'default',
+                    name: '智慧小助手',
+                    description: '我是你的AI助手，可以回答日常问题、聊天解闷、提供百科知识。随时随地为你提供帮助！',
+                    capabilities: ['日常问答', '知识百科', '生活建议', '轻松聊天', '实时互动'],
+                    voiceType: '温柔女声',
+                    personality: '友好、知识丰富、温暖、有耐心'
+                }
+            };
+            
+            const option = document.createElement('option');
+            option.value = 'default';
+            option.textContent = '智慧小助手';
+            agentSelect.appendChild(option);
+            
+            agentSelect.value = 'default';
+            AppState.selectedAgent = 'default';
+            setTimeout(() => showAgentTooltip('default'), 1000);
+        }
+
+        async function toggleConversation() {
+            if (AppState.isActive) {
+                await stopConversation();
+            } else {
+                await startConversation();
+            }
+        }
+
+        async function startConversation() {
+            if (AppState.isProcessing || !AppState.selectedAgent) {
+                if (!AppState.selectedAgent) alert('Please select an AI agent first');
+                return;
+            }
+            
+            AppState.isProcessing = true;
+            const button = document.getElementById('toggle-btn');
+            button.disabled = true;
+            button.textContent = 'Connecting...';
+            
+            try {
+                const credentials = await apiRequest('/credentials', { agentId: AppState.selectedAgent });
+                const userInfo = { ...credentials, agent: AppState.selectedAgent };
+                const result = await apiRequest('/conversations', { userInfo });
+                
+                AppState.taskId = result.TaskId;
+                TRTCState.currentUserId = userInfo.userId;
+                TRTCState.botUserId = userInfo.robotId;
+                
+                await enterTRTCRoom({
+                    roomId: userInfo.roomId,
+                    sdkAppId: userInfo.sdkAppId,
+                    userId: userInfo.userId,
+                    userSig: userInfo.userSig
+                });
+                
+                updateStatus('room', 'Connected');
+                updateStatus('ai', 'Active');
+                
+                button.textContent = 'End Chat';
+                button.classList.add('danger');
+                AppState.isActive = true;
+                document.getElementById('agent-select').disabled = true;
+                
+            } catch (error) {
+                console.error('Failed to start conversation:', error);
+                updateStatus('room', 'Connection Failed');
+                alert(`Failed to start: ${error.message}`);
+                button.textContent = 'Start Chat';
+            } finally {
+                button.disabled = false;
+                AppState.isProcessing = false;
+            }
+        }
+
+        async function stopConversation() {
+            if (AppState.isProcessing) return;
+            
+            AppState.isProcessing = true;
+            const button = document.getElementById('toggle-btn');
+            button.disabled = true;
+            button.textContent = 'Stopping...';
+            
+            try {
+                if (AppState.taskId) {
+                    await apiRequest('/conversations', { 
+                        TaskId: AppState.taskId, 
+                        agent: AppState.selectedAgent 
+                    }, 'DELETE');
+                }
+                
+                await exitTRTCRoom();
+                
+                AppState.taskId = null;
+                updateStatus('room', 'Disconnected');
+                updateStatus('ai', 'Inactive');
+                
+                // Clear displays
+                document.getElementById('subtitle-text-place').value = '';
+                document.getElementById('subtitle-display').value = '';
+                document.getElementById('conversation-display').value = '';
+                document.getElementById('agent-select').disabled = false;
+                
+            } catch (error) {
+                console.error('Failed to stop conversation:', error);
+                alert(`Failed to stop: ${error.message}`);
+            } finally {
+                button.classList.remove('danger');
+                button.textContent = 'Start Chat';
+                AppState.isActive = false;
+                button.disabled = false;
+                AppState.isProcessing = false;
+            }
+        }
+
+        function sendInterrupt() {
+            if (!TRTCState.client) return;
+            
+            try {
+                const payload = {
+                    type: 20001,
+                    sender: TRTCState.currentUserId,
+                    receiver: [TRTCState.botUserId],
+                    payload: { id: Date.now().toString(), timestamp: Date.now() }
+                };
+                
+                TRTCState.client.sendCustomMessage({
+                    cmdId: 2,
+                    data: new TextEncoder().encode(JSON.stringify(payload)).buffer
+                });
+                
+                console.log('Interrupt signal sent');
+            } catch (error) {
+                console.error('Failed to send interrupt:', error);
+            }
+        }
+
+        let tooltipTimeout;
+        
+        function showAgentTooltip(agentId) {
+            const tooltip = document.getElementById('agent-tooltip');
+            const agent = AppState.agentData[agentId];
+            const agentSelect = document.getElementById('agent-select');
+            
+            if (!agent || !tooltip) return;
+            
+            clearTimeout(tooltipTimeout);
+            
+            const capabilities = agent.capabilities ? agent.capabilities.join(' • ') : '';
+            const personality = agent.personality || '';
+            
+            tooltip.innerHTML = `
+                <h4>🤖 ${agent.name}</h4>
+                <p><strong>Description:</strong> ${agent.description || 'No description available'}</p>
+                ${capabilities ? `<p><strong>Capabilities:</strong> ${capabilities}</p>` : ''}
+                ${personality ? `<p><strong>Personality:</strong> ${personality}</p>` : ''}
+            `;
+            
+            const rect = agentSelect.getBoundingClientRect();
+            tooltip.style.left = `${rect.left}px`;
+            tooltip.style.top = `${rect.bottom + 10}px`;
+            
+            tooltip.classList.add('visible');
+        }
+
+        function hideAgentTooltip() {
+            const tooltip = document.getElementById('agent-tooltip');
+            if (tooltip) {
+                tooltipTimeout = setTimeout(() => {
+                    tooltip.classList.remove('visible');
+                }, 500);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAgents();
+            
+            const agentSelect = document.getElementById('agent-select');
+            const tooltip = document.getElementById('agent-tooltip');
+            
+            agentSelect.addEventListener('change', function() {
+                AppState.selectedAgent = this.value;
+                if (this.value) {
+                    showAgentTooltip(this.value);
+                }
+            });
+            
+            agentSelect.addEventListener('mouseenter', function() {
+                if (this.value) {
+                    showAgentTooltip(this.value);
+                }
+            });
+            
+            agentSelect.addEventListener('mouseleave', hideAgentTooltip);
+            
+            // Keep tooltip visible when hovering over it
+            tooltip.addEventListener('mouseenter', function() {
+                clearTimeout(tooltipTimeout);
+            });
+            
+            tooltip.addEventListener('mouseleave', hideAgentTooltip);
+            
+            document.getElementById('toggle-btn').addEventListener('click', toggleConversation);
+            document.getElementById('interrupt-btn').addEventListener('click', sendInterrupt);
+        });
+    </script>
+</body>
+</html> 
