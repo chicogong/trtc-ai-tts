@@ -87,11 +87,11 @@ const agentConfig = {
 
   // Text-to-speech configuration
   TTSConfig: {
-    TTSType: "new",
+    TTSType: process.env.TTS_TYPE || "new",
     APIKey: process.env.TTS_API_KEY,
     APIUrl: process.env.TTS_API_URL,
-    SampleRate: 24000,
-    VoiceId: "female-kefu-xiaorui"
+    SampleRate: parseInt(process.env.TTS_SAMPLE_RATE) || 24000,
+    VoiceId: process.env.TTS_VOICE_ID
   }
 };
 
@@ -142,6 +142,13 @@ app.post('/conversations', (req, res) => {
     
     const client = createClient();
 
+    // Get voice selection from request or use default
+    const voiceId = userInfo.voiceId || agentConfig.TTSConfig.VoiceId;
+    const ttsConfig = {
+      ...agentConfig.TTSConfig,
+      VoiceId: voiceId
+    };
+
     const params = {
       "SdkAppId": userInfo.sdkAppId,
       "RoomId": userInfo.roomId.toString(),
@@ -153,7 +160,7 @@ app.post('/conversations', (req, res) => {
       },
       "STTConfig": agentConfig.STTConfig,
       "LLMConfig": JSON.stringify(agentConfig.LLMConfig),
-      "TTSConfig": JSON.stringify(agentConfig.TTSConfig)
+      "TTSConfig": JSON.stringify(ttsConfig)
     };
 
     client.StartAIConversation(params)

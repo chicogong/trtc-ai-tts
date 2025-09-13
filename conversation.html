@@ -308,6 +308,14 @@
             <select id="agent-select" class="agent-select">
                 <option value="">Select AI Agent...</option>
             </select>
+            <select id="voice-select" class="agent-select">
+                <option value="female-kefu-xiaomei">客服女声-小美</option>
+                <option value="female-kefu-xiaoxin">客服女声-小欣</option>
+                <option value="female-kefu-xiaoyue">客服女声-小悦</option>
+                <option value="male-kefu-xiaoxu">客服男声-小旭</option>
+                <option value="female-kefu-xiaorui">客服女声-小蕊</option>
+                <option value="male-kefu-xiaoming">客服男声-小明</option>
+            </select>
             <button id="toggle-btn" class="control-btn">Start Chat</button>
             <button id="interrupt-btn" class="control-btn">Interrupt</button>
         </div>
@@ -520,7 +528,12 @@
             
             try {
                 const credentials = await apiRequest('/credentials', { agentId: AppState.selectedAgent });
-                const userInfo = { ...credentials, agent: AppState.selectedAgent };
+                const voiceSelect = document.getElementById('voice-select');
+                const userInfo = { 
+                    ...credentials, 
+                    agent: AppState.selectedAgent,
+                    voiceId: voiceSelect.value 
+                };
                 const result = await apiRequest('/conversations', { userInfo });
                 
                 AppState.taskId = result.TaskId;
@@ -541,6 +554,7 @@
                 button.classList.add('danger');
                 AppState.isActive = true;
                 document.getElementById('agent-select').disabled = true;
+                document.getElementById('voice-select').disabled = true;
                 
             } catch (error) {
                 console.error('Failed to start conversation:', error);
@@ -580,6 +594,7 @@
                 document.getElementById('subtitle-display').value = '';
                 document.getElementById('conversation-display').value = '';
                 document.getElementById('agent-select').disabled = false;
+                document.getElementById('voice-select').disabled = false;
                 
             } catch (error) {
                 console.error('Failed to stop conversation:', error);
